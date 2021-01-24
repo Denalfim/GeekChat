@@ -4,8 +4,10 @@ import commands.Command;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 public class ClientHandler {
     private Server server;
@@ -24,10 +26,11 @@ public class ClientHandler {
 
             new Thread(() -> {
                 try {
-//                    socket.setSoTimeout(0);
+
                     //цикл аутентификации
                     while (true) {
                         String str = in.readUTF();
+                        socket.setSoTimeout(Command.CLOSE_SOKCET);
 
                         if (str.startsWith(Command.AUTH)) {
                             String[] token = str.split("\\s");
@@ -71,6 +74,7 @@ public class ClientHandler {
                     //цикл работы
                     while (true) {
                         String str = in.readUTF();
+                        socket.setSoTimeout(0);
 
                         if (str.startsWith("/")) {
                             if (str.equals(Command.END)) {
@@ -90,7 +94,10 @@ public class ClientHandler {
                             server.broadcastMsg(this, str);
                         }
                     }
-                //SocketTimeoutException
+                } catch (SocketTimeoutException e) {
+                    server.broadcastMsg(this, Command.END);
+                    sendMsg(Command.END);
+
                 } catch (RuntimeException e) {
                     System.out.println(e.getMessage());
                 } catch (IOException e) {

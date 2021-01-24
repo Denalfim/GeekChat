@@ -5,6 +5,7 @@ import commands.Command;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -27,6 +28,8 @@ public class Server {
                 socket = server.accept();
                 System.out.println("Client connected");
                 new ClientHandler(this, socket);
+
+
             }
 
         } catch (IOException e) {
@@ -34,6 +37,7 @@ public class Server {
         } finally {
             try {
                 server.close();
+                socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
