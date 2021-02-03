@@ -4,7 +4,6 @@ import commands.Command;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -30,19 +29,21 @@ public class ClientHandler {
                     //цикл аутентификации
                     while (true) {
                         String str = in.readUTF();
-                        socket.setSoTimeout(Command.CLOSE_SOKCET);
+                        socket.setSoTimeout(5000);
 
                         if (str.startsWith(Command.AUTH)) {
                             String[] token = str.split("\\s");
                             String newNick = server.getAuthService()
                                     .getNicknameByLoginAndPassword(token[1], token[2]);
                             login = token[1];
+
                             if (newNick != null) {
                                 if (!server.isLoginAuthenticated(login)) {
                                     nickname = newNick;
                                     sendMsg(Command.AUTH_OK + " " + nickname);
                                     server.subscribe(this);
                                     System.out.println("client " + nickname + " connected " + socket.getRemoteSocketAddress());
+                                    socket.setSoTimeout(0);
                                     break;
                                 } else {
                                     sendMsg("С этим логином уже авторизовались");
@@ -74,12 +75,11 @@ public class ClientHandler {
                     //цикл работы
                     while (true) {
                         String str = in.readUTF();
-                        socket.setSoTimeout(0);
+
 
                         if (str.startsWith("/")) {
                             if (str.equals(Command.END)) {
                                 sendMsg(Command.END);
-                                System.out.println("client disconnected");
                                 break;
                             }
                             if (str.startsWith(Command.PRV_MSG)) {
@@ -89,13 +89,29 @@ public class ClientHandler {
                                 }
                                 server.privateMsg(this, token[1], token[2]);
                             }
+                            if(str.startsWith(Command.CHANGE)){
+                                String newNickname = str.split("\\s",2)[1];
+                                if(newNickname.contains(" ")){
+                                    sendMsg("Nickname cannot contain spaces");
+                                    continue;
+                                }
+                                if(server.getAuthService().changeNickname(this.nickname, newNickname)){
+                                    this.nickname = newNickname;
+                                    sendMsg(Command.CHANGE + nickname);
+                                    sendMsg("Nickname has been changed");
+                                    server.broadcastClientList();
+
+                                }else{
+                                    sendMsg("Nickname is already taken");
+
+                                }
+                            }
 
                         } else {
                             server.broadcastMsg(this, str);
                         }
                     }
                 } catch (SocketTimeoutException e) {
-                    server.broadcastMsg(this, Command.END);
                     sendMsg(Command.END);
                     try {
                         socket.close();
@@ -109,6 +125,7 @@ public class ClientHandler {
                     e.printStackTrace();
                 } finally {
                     server.unsubscribe(this);
+                    System.out.println("client disconnected");
                     try {
                         socket.close();
                     } catch (IOException e) {

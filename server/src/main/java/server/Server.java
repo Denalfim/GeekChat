@@ -5,7 +5,6 @@ import commands.Command;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -17,8 +16,14 @@ public class Server {
     private AuthService authService;
 
     public Server() {
+
         clients = new CopyOnWriteArrayList<>();
-        authService = new SimpleAuthService();
+        //authService = new SimpleAuthService();
+        if (!Database.connect()) {
+            throw new RuntimeException("Unable to connect to the database");
+        }
+
+        authService = new DataBaseAuthService();
 
         try {
             server = new ServerSocket(PORT);
@@ -40,6 +45,8 @@ public class Server {
                 socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
+            }finally {
+                Database.disconnect();
             }
         }
     }

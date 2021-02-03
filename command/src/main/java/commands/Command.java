@@ -9,7 +9,6 @@ public class Command {
     public static final String REG = "/reg";
     public static final String REG_OK = "/regok";
     public static final String REG_NO = "/regno";
-    public static final int CLOSE_SOKCET = 5000;
-
+    public static final String CHANGE = "/changenik ";
 
 }
