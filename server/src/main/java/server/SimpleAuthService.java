@@ -3,7 +3,11 @@ package server;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SimpleAuthService implements AuthService {
+public abstract class SimpleAuthService implements AuthService {
+    public abstract String getNickname(String login, String password);
+
+    public abstract boolean changeNickname(String currentNickname, String newNickname);
+
     private class UserData {
         String login;
         String password;
