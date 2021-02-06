@@ -98,7 +98,7 @@ public class ClientHandler {
                                 if(server.getAuthService().changeNickname(this.nickname, newNickname)){
                                     this.nickname = newNickname;
                                     sendMsg(Command.CHANGE + nickname);
-                                    sendMsg("Nickname has been changed");
+                                    sendMsg("Nickname has been changed - " + nickname);
                                     server.broadcastClientList();
 
                                 }else{
