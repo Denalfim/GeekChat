@@ -47,6 +47,7 @@ public class Controller implements Initializable {
 
     private boolean authenticated;
     private String nickname;
+    private String login;
 
     private Stage stage;
     private Stage regStage;
@@ -64,6 +65,7 @@ public class Controller implements Initializable {
         authPanel.setManaged(!authenticated);
         if (!authenticated) {
             nickname = "";
+
         }
         setTitle(nickname);
         textArea.clear();
@@ -185,6 +187,7 @@ public class Controller implements Initializable {
         if (socket == null || socket.isClosed()) {
             connect();
         }
+        login = loginField.getText().trim();
 
         String msg = String.format("%s %s %s", Command.AUTH, loginField.getText().trim(), passwordField.getText().trim());
 
@@ -253,7 +256,7 @@ public class Controller implements Initializable {
 
     private void SaveHistory() throws IOException {
         try {
-            messageHistoryFile = new File("client/data/history_" + nickname + ".txt");
+            messageHistoryFile = new File(getHistoryByLogin(login));
             if (!messageHistoryFile.exists()) {
                 System.out.println("No history file. Created him");
                 messageHistoryFile.createNewFile();
@@ -271,8 +274,12 @@ public class Controller implements Initializable {
     }
 
     private File setMessageHistoryFile() {
-        messageHistoryFile = new File("client/data/history_" + nickname + ".txt");
+        messageHistoryFile = new File(getHistoryByLogin(login));
         return messageHistoryFile;
+    }
+
+    private static String getHistoryByLogin(String login){
+        return "client/data/history_" + login+ ".txt";
     }
 
     private void loadHistory() throws IOException {
