@@ -18,9 +18,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -49,10 +47,13 @@ public class Controller implements Initializable {
 
     private boolean authenticated;
     private String nickname;
+    private String login;
 
     private Stage stage;
     private Stage regStage;
     private RegController regController;
+    private final int RECOVERABLE_MESSAGE_QUANTITY = 100;
+    private File messageHistoryFile;
 
     public void setAuthenticated(boolean authenticated) {
         this.authenticated = authenticated;
@@ -64,6 +65,7 @@ public class Controller implements Initializable {
         authPanel.setManaged(!authenticated);
         if (!authenticated) {
             nickname = "";
+
         }
         setTitle(nickname);
         textArea.clear();
@@ -104,6 +106,8 @@ public class Controller implements Initializable {
                             if (str.startsWith(Command.AUTH_OK)) {
                                 nickname = str.split("\\s")[1];
                                 setAuthenticated(true);
+                                setMessageHistoryFile();
+                                loadHistory();
                                 break;
                             }
 
@@ -121,6 +125,7 @@ public class Controller implements Initializable {
                             }
                         } else {
                             textArea.appendText(str + "\n");
+
                         }
                     }
 
@@ -145,6 +150,7 @@ public class Controller implements Initializable {
 
                         } else {
                             textArea.appendText(str + "\n");
+                            SaveHistory();
                         }
                     }
                 } catch (RuntimeException e) {
@@ -181,6 +187,7 @@ public class Controller implements Initializable {
         if (socket == null || socket.isClosed()) {
             connect();
         }
+        login = loginField.getText().trim();
 
         String msg = String.format("%s %s %s", Command.AUTH, loginField.getText().trim(), passwordField.getText().trim());
 
@@ -246,4 +253,57 @@ public class Controller implements Initializable {
             e.printStackTrace();
         }
     }
+
+    private void SaveHistory() throws IOException {
+        try {
+            messageHistoryFile = new File(getHistoryByLogin(login));
+            if (!messageHistoryFile.exists()) {
+                System.out.println("No history file. Created him");
+                messageHistoryFile.createNewFile();
+            }
+
+            PrintWriter fileWriter = new PrintWriter(new FileWriter(messageHistoryFile, false));
+
+            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+            bufferedWriter.write(textArea.getText());
+            bufferedWriter.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private File setMessageHistoryFile() {
+        messageHistoryFile = new File(getHistoryByLogin(login));
+        return messageHistoryFile;
+    }
+
+    private static String getHistoryByLogin(String login){
+        return "client/data/history_" + login+ ".txt";
+    }
+
+    private void loadHistory() throws IOException {
+        int lineNumber = 0;
+        if (setMessageHistoryFile().exists()) {
+            FileReader fileReader = new FileReader(messageHistoryFile);
+            LineNumberReader lr = new LineNumberReader(fileReader);
+            while (lr.readLine() != null) {
+                lineNumber++;
+            }
+
+            BufferedReader br = new BufferedReader(new FileReader(messageHistoryFile));
+            for (int i = 0; i < lineNumber; i++) {
+                String line = br.readLine();
+                if (i >= lineNumber - RECOVERABLE_MESSAGE_QUANTITY) {
+                    textArea.appendText(line + "\n");
+                }
+
+            }
+
+        } else {
+            messageHistoryFile.createNewFile();
+        }
+    }
+
+
 }
